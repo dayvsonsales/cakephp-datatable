@@ -1,11 +1,13 @@
 <?php
 
 /**
- * This component provides compatibility between the dataTables jQuery plugin and CakePHP 2
+ * Original: https://github.com/cnizzdotcom/cakephp-datatable
+ * This component provides compatibility between the dataTables jQuery plugin and CakePHP 3
  * @author chris
  * @package DataTableComponent
  * @link http://www.datatables.net/release-datatables/examples/server_side/server_side.html parts of code borrowed from dataTables example
  * @since version 1.1.1
+ * compatibility to CakePHP 3 by Dayvson
 Copyright (c) 2013 Chris Nizzardini
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -26,6 +28,13 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
  */
+
+namespace App\Controller\Component;
+
+use Cake\Controller\Component;
+use Cake\ORM\TableRegistry;
+
+
 class DataTableComponent extends Component{
     
     private $model;
@@ -40,39 +49,30 @@ class DataTableComponent extends Component{
         
     }
     
-    public function initialize(Controller $controller){
-        $this->controller = $controller;
-        $modelName = $this->controller->modelClass;
-        $this->model = $this->controller->{$modelName};
+    public function initialize(array $config){
     }
     
 /**
  * returns dataTables compatible array - just json_encode the resulting aray
- * @param object $controller optional
- * @param object $model optional
+ * @param object $controller 
+ * @param object $model 
  * @return array
  */
-    public function getResponse($controller = null, $model=null){
-        
-        /**
-         * it is no longer necessary to pass in a controller or model
-         * this is handled in the initialize method
-         * $controller is disregarded.
-         * $model is only necessary if you are using a model from a different controller such as if you are in 
-         * a CustomerController but your method is displaying data from an OrdersModel.
-         */
+    public function getResponse($controller, $model=null){
         
         $this->setTimes('Pre','start','Preproccessing of conditions');
-        
+
+        $this->controller = $controller;
+
         if($model != null){  
             if(is_string($model)){
-                $this->model = $this->controller->{$model};
+                 $this->model = TableRegistry::get($model);
             }
-            else{
-                $this->model = $model;
-                unset($model);
-            }
+        }else{
+            $model = $this->controller->modelClass;
+            $this->model = TableRegistry::get($model);
         }
+        
 
         $conditions = isset($this->controller->paginate['conditions']) ? $this->controller->paginate['conditions'] : null;
 
@@ -112,13 +112,13 @@ class DataTableComponent extends Component{
         // @todo avoid multiple queries for finding count, maybe look into "SQL CALC FOUND ROWS"
         // get full count
         $this->model->recursive = -1;
-        $total = $this->model->find('count');
+        $total = $this->model->find()->count();
         $this->setTimes('Count All','stop');
         $this->setTimes('Filtered Count','start','Counts records that match conditions');
         $parameters = $this->controller->paginate;
         
         if($isFiltered){
-            $filteredTotal = $this->model->find('count',$parameters);
+            $filteredTotal = $this->model->find()->count($parameters);
         }
         $this->setTimes('Filtered Count','stop');
         $this->setTimes('Find','start','Cake Find');
