@@ -1,7 +1,8 @@
 CAKEPHP-DATATABLE
 ========
+Original from: https://github.com/cnizzdotcom/cakephp-datatable
 
-Provides server-side interoperability between CakePHP 2.x and jQuery DataTables plugin.
+Provides server-side interoperability between CakePHP 3.x and jQuery DataTables plugin.
 
 Features
 ------
@@ -9,13 +10,11 @@ Features
 *	Accepts dataTables ORDER BY requests
 *	Accepts dataTables WHERE conditions
 *	Accepts dataTables pagination
-*	Works with LinkableBehavior and to a lesser extent Containable
 
 Dependancies
 ------
 * PHP 5.x
-* CakePHP 2.x
-* LinkableBehavior is recommended but not required
+* CakePHP 3.x
 
 
 Installation
