@@ -44,7 +44,8 @@ class DataTableComponent extends Component{
     public $emptyElements = 0;
     public $fields = array();
     public $mDataProp = false;
-    
+    private $modelName;
+
     public function __construct(){
         
     }
@@ -73,6 +74,7 @@ class DataTableComponent extends Component{
             $this->model = TableRegistry::get($model);
         }
         
+        $this->modelName = $model;
 
         $conditions = isset($this->controller->paginate['conditions']) ? $this->controller->paginate['conditions'] : null;
 
@@ -97,7 +99,6 @@ class DataTableComponent extends Component{
         // check for WHERE statement in GET request
         if(isset($httpGet) && !empty($httpGet['sSearch'])){
             $conditions = $this->getWhereConditions();
-
             if( !empty($this->controller->paginate['contain']) ){
                 $this->controller->paginate = array_merge_recursive($this->controller->paginate, array('contain'=>$conditions));
             }
@@ -118,8 +119,9 @@ class DataTableComponent extends Component{
         $parameters = $this->controller->paginate;
         
         if($isFiltered){
-            $filteredTotal = $this->model->find()->count($parameters);
+            $filteredTotal = $this->model->find('all', $parameters)->count();
         }
+
         $this->setTimes('Filtered Count','stop');
         $this->setTimes('Find','start','Cake Find');
         
@@ -130,8 +132,7 @@ class DataTableComponent extends Component{
             $parameters['limit'] = $length;
             $parameters['offset'] = $start;
         }
-        
-        // execute sql select
+
         $data = $this->model->find('all', $parameters);
 
         $this->setTimes('Find','stop');
@@ -171,7 +172,7 @@ class DataTableComponent extends Component{
  * @param void
  * @return string
  */
-    private function getOrderByStatements(){
+        private function getOrderByStatements(){
         
         if( !isset($this->controller->paginate['fields']) && !empty($this->controller->paginate['contain']) && empty($this->fields) ){
             throw new Exception("Missing field and/or contain option in Paginate. Please set the fields so I know what to order by.");
@@ -208,7 +209,7 @@ class DataTableComponent extends Component{
  * @param void
  * @return array
  */
-    private function getWhereConditions(){
+        private function getWhereConditions(){
         
         if( $this->mDataProp == false && !isset($this->controller->paginate['fields']) && empty($this->fields) ){
             throw new Exception("Field list is not set. Please set the fields so I know how to build where statement.");
@@ -216,7 +217,6 @@ class DataTableComponent extends Component{
         
         $conditions = array();
         
-
         if($this->mDataProp == true){
             for($i=0;$i<$this->controller->request->query['iColumns'];$i++){
                 if(!isset($this->controller->request->query['bSearchable_'.$i]) || $this->controller->request->query['bSearchable_'.$i] == true){
@@ -227,9 +227,8 @@ class DataTableComponent extends Component{
         else if(!empty($this->fields) || !empty($this->controller->paginate['fields']) ){
             $fields = !empty($this->fields) ? $this->fields : $this->controller->paginate['fields'];
         }
-
         foreach($fields as $x => $column){
-            
+            $upper='';
             // only create conditions on bSearchable fields
             if( $this->controller->request->query['bSearchable_'.$x] == 'true' ){
                 
@@ -239,12 +238,9 @@ class DataTableComponent extends Component{
                     );                  
                 }
                 else{
-
                     list($table, $field) = explode('.', $column);
-
                     // attempt using definitions in $model->validate to build intelligent conditions
                     if( $this->conditionsByValidate == 1 && array_key_exists($column,$this->model->validate) ){
-
                         if( !empty($this->controller->paginate['contain']) ){
                             if(array_key_exists($table, $this->controller->paginate['contain']) && in_array($field, $this->controller->paginate['contain'][$table]['fields'])){
                                 $conditions[$table]['conditions'][] = $this->conditionByDataType($column);
@@ -255,7 +251,6 @@ class DataTableComponent extends Component{
                         }
                     }
                     else{
-
                         if( !empty($this->controller->paginate['contain']) ){
                             if(array_key_exists($table, $this->controller->paginate['contain']) && in_array($field, $this->controller->paginate['contain'][$table]['fields'])){
                                 $conditions[$table]['conditions'][] = $column.' LIKE "%'.$this->controller->request->query['sSearch'].'%"';
@@ -299,9 +294,8 @@ class DataTableComponent extends Component{
  * @param string $key
  * @return array
  */
-    private function getDataRecursively($data,$key=null){
+     private function getDataRecursively($data,$key=null){
         $fields = array();
-
         // note: the chr() function is used to produce the arrays index to make sorting via ksort() easier.
         
         // loop through cake query result
@@ -341,6 +335,7 @@ class DataTableComponent extends Component{
         //var_dump($fields);
         return $fields;
     }
+    
     
 /**
  * setTimes method - adds to timer of settings[timed] = true
